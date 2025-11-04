@@ -1,16 +1,20 @@
-package domain
+package model
 
 import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type Subscription struct {
-	ID         int64
-	Service    string
-	Price      float64
-	UserID     uuid.UUID
-	StartDate  time.Time
-	EndDate    *time.Time
+	ID             uint           `gorm:"primaryKey" json:"id"`
+	ServiceName    string         `gorm:"type:varchar(255);not null" json:"service_name"`
+	Price          float64        `gorm:"not null" json:"price"`
+	UserID         uuid.UUID      `gorm:"type:uuid;not null" json:"user_id"`
+	StartDate      time.Time      `gorm:"not null" json:"start_date"`
+	EndDate        *time.Time     `json:"end_date,omitempty"`
+	CreatedAt      time.Time      `json:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at"`
+	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
