@@ -71,3 +71,39 @@ func (r *subscriptionReadRepo) GetAll(ctx context.Context) ([]model.Subscription
 	log.Printf("[SubscriptionRepo] GetAll success, found %d subscriptions", len(subs))
 	return subs, nil
 }
+
+func (r *subscriptionReadRepo) SumPriceByFilter(
+	ctx context.Context,
+	userID *string,
+	serviceName *string,
+	startDate, endDate time.Time,
+) (float64, error) {
+	log.Println("[SubscriptionRepo] SumPriceByFilter called")
+
+	query := r.db.WithContext(ctx).Model(&model.Subscription{}).Select("SUM(price) as total_price")
+
+	if userID != nil && *userID != "" {
+		uid, err := uuid.Parse(*userID)
+		if err != nil {
+			log.Printf("[SubscriptionRepo] SumPriceByFilter invalid userID=%s: %v", *userID, err)
+			return 0, err
+		}
+		query = query.Where("user_id = ?", uid)
+	}
+
+	if serviceName != nil && *serviceName != "" {
+		query = query.Where("service_name = ?", *serviceName)
+	}
+
+	query = query.Where("start_date >= ? AND start_date <= ?", startDate, endDate)
+
+	var total float64
+	err := query.Scan(&total).Error
+	if err != nil {
+		log.Printf("[SubscriptionRepo] SumPriceByFilter error: %v", err)
+		return 0, err
+	}
+
+	log.Printf("[SubscriptionRepo] SumPriceByFilter success, total_price=%.2f", total)
+	return total, nil
+}
