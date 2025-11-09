@@ -1,43 +1,46 @@
-package main
-
 import (
-	"log"
-	"subscription-service/internal/config"
-	"subscription-service/internal/db"
-	"subscription-service/internal/model"
-	"subscription-service/internal/repository/read_repository"
-	"subscription-service/internal/repository/write_repository"
-	"subscription-service/internal/router"
-	"subscription-service/internal/service"
+    "log"
 
-	"gorm.io/gorm"
+    _ "subscription-service/docs"
+
+    "subscription-service/internal/config"
+    "subscription-service/internal/db"
+    "subscription-service/internal/model"
+    "subscription-service/internal/repository/read_repository"
+    "subscription-service/internal/repository/write_repository"
+    "subscription-service/internal/router"
+    "subscription-service/internal/service"
+
+    swaggerFiles "github.com/swaggo/files"     
+    ginSwagger "github.com/swaggo/gin-swagger" 
+
+    "gorm.io/gorm"
 )
 
 func main() {
-	cfg := config.Load()
+    cfg := config.Load()
 
-	database := db.Connect(cfg)
+    docs.SwaggerInfo.Title = "Subscription Service API"
+    docs.SwaggerInfo.Description = "API documentation for Subscription Service"
+    docs.SwaggerInfo.Version = "1.0"
+    docs.SwaggerInfo.Host = "localhost:" + cfg.AppPort
+    docs.SwaggerInfo.BasePath = "/"
 
-	runMigrations(database)
+    database := db.Connect(cfg)
+    runMigrations(database)
 
-	readRepo := read_repository.NewSubscriptionReadRepo(database)
-	writeRepo := write_repository.NewSubscriptionWriteRepo(database)
+    readRepo := read_repository.NewSubscriptionReadRepo(database)
+    writeRepo := write_repository.NewSubscriptionWriteRepo(database)
 
-	readSvc := service.NewSubscriptionQueryService(readRepo)
-	writeSvc := service.NewSubscriptionCommandService(writeRepo, readSvc)
+    readSvc := service.NewSubscriptionQueryService(readRepo)
+    writeSvc := service.NewSubscriptionCommandService(writeRepo, readSvc)
 
-	r := router.NewRouter(readSvc, writeSvc)
+    r := router.NewRouter(readSvc, writeSvc)
 
-	log.Printf("Starting server on port %s...", cfg.AppPort)
-	if err := r.Run(":" + cfg.AppPort); err != nil {
-		log.Fatalf("Server failed to start: %v", err)
-	}
-}
+    r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-func runMigrations(db *gorm.DB) {
-	log.Println("Running migrations...")
-	if err := db.AutoMigrate(&model.Subscription{}); err != nil {
-		log.Fatalf("Failed to run migrations: %v", err)
-	}
-	log.Println("Migrations completed")
+    log.Printf("Starting server on port %s...", cfg.AppPort)
+    if err := r.Run(":" + cfg.AppPort); err != nil {
+        log.Fatalf("Server failed to start: %v", err)
+    }
 }

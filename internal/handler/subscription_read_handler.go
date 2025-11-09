@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"subscription-service/internal/model"
 	"subscription-service/internal/service"
 )
 
@@ -17,6 +18,14 @@ func NewSubscriptionReadHandler(queryService service.SubscriptionQueryService) *
 	return &SubscriptionReadHandler{queryService: queryService}
 }
 
+// GetAll godoc
+// @Summary      Get all subscriptions
+// @Description  Returns a list of all subscriptions in the system
+// @Tags         subscriptions
+// @Produce      json
+// @Success      200  {array}   model.Subscription
+// @Failure      500  {object}  map[string]string
+// @Router       /subscriptions [get]
 func (h *SubscriptionReadHandler) GetAll(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -29,6 +38,17 @@ func (h *SubscriptionReadHandler) GetAll(c *gin.Context) {
 	c.JSON(http.StatusOK, subs)
 }
 
+// GetByID godoc
+// @Summary      Get subscription by ID
+// @Description  Returns a subscription by its unique ID
+// @Tags         subscriptions
+// @Produce      json
+// @Param        id   path      int  true  "Subscription ID"
+// @Success      200  {object}  model.Subscription
+// @Failure      400  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /subscriptions/{id} [get]
 func (h *SubscriptionReadHandler) GetByID(c *gin.Context) {
 	ctx := c.Request.Context()
 	idParam := c.Param("id")
@@ -52,6 +72,16 @@ func (h *SubscriptionReadHandler) GetByID(c *gin.Context) {
 	c.JSON(http.StatusOK, sub)
 }
 
+// GetByUserID godoc
+// @Summary      Get subscriptions by User ID
+// @Description  Returns all subscriptions associated with a given user
+// @Tags         subscriptions
+// @Produce      json
+// @Param        user_id  path      string  true  "User ID"
+// @Success      200  {array}   model.Subscription
+// @Failure      400  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /subscriptions/user/{user_id} [get]
 func (h *SubscriptionReadHandler) GetByUserID(c *gin.Context) {
 	ctx := c.Request.Context()
 	userID := c.Param("user_id")
@@ -65,6 +95,19 @@ func (h *SubscriptionReadHandler) GetByUserID(c *gin.Context) {
 	c.JSON(http.StatusOK, subs)
 }
 
+// SumPriceByFilter godoc
+// @Summary      Get total subscription price by filters
+// @Description  Calculates the total price of subscriptions filtered by user_id, service_name, start_date and end_date
+// @Tags         subscriptions
+// @Produce      json
+// @Param        user_id      query     string  false  "User ID"
+// @Param        service_name query     string  false  "Service Name"
+// @Param        start_date   query     string  true   "Start Date (RFC3339 format)"
+// @Param        end_date     query     string  true   "End Date (RFC3339 format)"
+// @Success      200  {object}  map[string]float64
+// @Failure      400  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /subscriptions/sum [get]
 func (h *SubscriptionReadHandler) SumPriceByFilter(c *gin.Context) {
 	ctx := c.Request.Context()
 	userID := c.Query("user_id")
