@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"subscription-service/internal/model"
-	"subscription-service/internal/service"
+	"github.com/winnamu6/go-subscription-service/internal/model"
+	"github.com/winnamu6/go-subscription-service/internal/service"
 )
 
 type SubscriptionWriteHandler struct {

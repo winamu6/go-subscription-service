@@ -2,7 +2,7 @@ package write_repository
 
 import (
 	"context"
-	"subscription-service/internal/model"
+	"github.com/winnamu6/go-subscription-service/internal/model"
 )
 
 type SubscriptionWriteRepository interface {

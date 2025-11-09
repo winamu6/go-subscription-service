@@ -2,8 +2,8 @@ package service
 
 import (
 	"context"
-	"subscription-service/internal/model"
-	"subscription-service/internal/repository/read_repository"
+	"github.com/winnamu6/go-subscription-service/internal/model"
+	"github.com/winnamu6/go-subscription-service/internal/repository/read_repository"
 	"time"
 )
 
@@ -58,7 +58,7 @@ func toSubscriptionResponse(sub *model.Subscription) *model.SubscriptionResponse
 	return &model.SubscriptionResponse{
 		ID:          sub.ID,
 		ServiceName: sub.ServiceName,
-		Price:       sub.Price,
+		Price:		 float64(sub.Price),
 		UserID:      sub.UserID,
 		StartDate:   sub.StartDate,
 		EndDate:     sub.EndDate,

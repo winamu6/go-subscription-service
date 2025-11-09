@@ -3,7 +3,7 @@ package read_repository
 import (
 	"context"
 	"time"
-	"subscription-service/internal/model"
+	"github.com/winnamu6/go-subscription-service/internal/model"
 )
 
 type SubscriptionReadRepository interface {

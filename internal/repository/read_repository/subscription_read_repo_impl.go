@@ -5,8 +5,7 @@ import (
 	"errors"
 	"log"
 	"time"
-	"subscription-service/internal/db"
-	"subscription-service/internal/model"
+	"github.com/winnamu6/go-subscription-service/internal/model"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"

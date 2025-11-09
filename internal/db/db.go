@@ -6,7 +6,7 @@ import (
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"subscription-service/internal/config"
+	"github.com/winnamu6/go-subscription-service/internal/config"
 )
 
 func Connect(cfg *config.Config) *gorm.DB {

@@ -1,15 +1,17 @@
+package main
+
 import (
     "log"
 
-    _ "subscription-service/docs"
+    "github.com/winnamu6/go-subscription-service/docs"
 
-    "subscription-service/internal/config"
-    "subscription-service/internal/db"
-    "subscription-service/internal/model"
-    "subscription-service/internal/repository/read_repository"
-    "subscription-service/internal/repository/write_repository"
-    "subscription-service/internal/router"
-    "subscription-service/internal/service"
+    "github.com/winnamu6/go-subscription-service/internal/config"
+    "github.com/winnamu6/go-subscription-service/internal/db"
+    "github.com/winnamu6/go-subscription-service/internal/model"
+    "github.com/winnamu6/go-subscription-service/internal/repository/read_repository"
+    "github.com/winnamu6/go-subscription-service/internal/repository/write_repository"
+    "github.com/winnamu6/go-subscription-service/internal/router"
+    "github.com/winnamu6/go-subscription-service/internal/service"
 
     swaggerFiles "github.com/swaggo/files"     
     ginSwagger "github.com/swaggo/gin-swagger" 
@@ -43,4 +45,12 @@ func main() {
     if err := r.Run(":" + cfg.AppPort); err != nil {
         log.Fatalf("Server failed to start: %v", err)
     }
+}
+
+func runMigrations(db *gorm.DB) {
+	log.Println("Running migrations...")
+	if err := db.AutoMigrate(&model.Subscription{}); err != nil {
+		log.Fatalf("Failed to run migrations: %v", err)
+	}
+	log.Println("Migrations completed")
 }

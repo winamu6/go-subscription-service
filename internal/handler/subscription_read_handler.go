@@ -6,8 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"subscription-service/internal/model"
-	"subscription-service/internal/service"
+	"github.com/winnamu6/go-subscription-service/internal/service"
 )
 
 type SubscriptionReadHandler struct {

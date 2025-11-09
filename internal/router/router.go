@@ -2,8 +2,8 @@ package router
 
 import (
 	"github.com/gin-gonic/gin"
-	"subscription-service/internal/handler"
-	"subscription-service/internal/service"
+	"github.com/winnamu6/go-subscription-service/internal/handler"
+	"github.com/winnamu6/go-subscription-service/internal/service"
 )
 
 func NewRouter(readSvc service.SubscriptionQueryService, writeSvc service.SubscriptionCommandService) *gin.Engine {

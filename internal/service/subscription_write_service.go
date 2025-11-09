@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 	"errors"
-	"subscription-service/internal/model"
-	"subscription-service/internal/repository/write_repository"
+	"github.com/winnamu6/go-subscription-service/internal/model"
+	"github.com/winnamu6/go-subscription-service/internal/repository/write_repository"
 	"time"
 )
 
@@ -33,7 +33,7 @@ func (s *subscriptionCommandService) Create(ctx context.Context, req *model.Crea
 
 	sub := &model.Subscription{
 		ServiceName: req.ServiceName,
-		Price:       req.Price,
+		Price:       int(req.Price),
 		UserID:      req.UserID,
 		StartDate:   req.StartDate,
 		EndDate:     req.EndDate,
@@ -62,15 +62,23 @@ func (s *subscriptionCommandService) Update(ctx context.Context, id uint, req *m
 		return nil, errors.New("end_date cannot be before start_date")
 	}
 
+	var price int
+	if req.Price != nil {
+		price = int(*req.Price) // из DTO
+	} else {
+		price = int(existing.Price) // из QueryService (float64 → int)
+	}
+
 	sub := &model.Subscription{
 		ID:          id,
 		ServiceName: coalesceString(req.ServiceName, existing.ServiceName),
-		Price:       coalesceInt(req.Price, existing.Price),
+		Price:       price,
 		UserID:      existing.UserID,
 		StartDate:   startDate,
 		EndDate:     endDate,
 		CreatedAt:   existing.CreatedAt,
 	}
+
 
 	if err := s.writeRepo.Update(ctx, sub); err != nil {
 		return nil, err
