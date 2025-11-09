@@ -10,7 +10,7 @@ import (
 type Subscription struct {
 	ID          uint           `gorm:"primaryKey" json:"id"`
 	ServiceName string         `gorm:"type:varchar(255);not null" json:"service_name"`
-	Price       float64        `gorm:"not null" json:"price"`
+	Price       int            `gorm:"not null" json:"price"` // целое число рублей
 	UserID      uuid.UUID      `gorm:"type:uuid;not null" json:"user_id"`
 	StartDate   time.Time      `gorm:"not null" json:"start_date"`
 	EndDate     *time.Time     `json:"end_date,omitempty"`

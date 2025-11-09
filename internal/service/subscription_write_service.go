@@ -37,8 +37,6 @@ func (s *subscriptionCommandService) Create(ctx context.Context, req *model.Crea
 		UserID:      req.UserID,
 		StartDate:   req.StartDate,
 		EndDate:     req.EndDate,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
 	}
 
 	if err := s.writeRepo.Create(ctx, sub); err != nil {
@@ -57,14 +55,21 @@ func (s *subscriptionCommandService) Update(ctx context.Context, id uint, req *m
 		return nil, errors.New("subscription not found")
 	}
 
+	startDate := coalesceTime(req.StartDate, existing.StartDate)
+	endDate := coalesceTimePtr(req.EndDate, existing.EndDate)
+
+	if endDate != nil && endDate.Before(startDate) {
+		return nil, errors.New("end_date cannot be before start_date")
+	}
+
 	sub := &model.Subscription{
 		ID:          id,
 		ServiceName: coalesceString(req.ServiceName, existing.ServiceName),
-		Price:       coalesceFloat(req.Price, existing.Price),
+		Price:       coalesceInt(req.Price, existing.Price),
 		UserID:      existing.UserID,
-		StartDate:   coalesceTime(req.StartDate, existing.StartDate),
-		EndDate:     coalesceTimePtr(req.EndDate, existing.EndDate),
-		UpdatedAt:   time.Now(),
+		StartDate:   startDate,
+		EndDate:     endDate,
+		CreatedAt:   existing.CreatedAt,
 	}
 
 	if err := s.writeRepo.Update(ctx, sub); err != nil {
@@ -86,7 +91,6 @@ func (s *subscriptionCommandService) Delete(ctx context.Context, id uint) error 
 	return s.writeRepo.Delete(ctx, id)
 }
 
-
 func coalesceString(newVal, oldVal string) string {
 	if newVal != "" {
 		return newVal
@@ -94,7 +98,7 @@ func coalesceString(newVal, oldVal string) string {
 	return oldVal
 }
 
-func coalesceFloat(newVal *float64, oldVal float64) float64 {
+func coalesceInt(newVal *int, oldVal int) int {
 	if newVal != nil {
 		return *newVal
 	}

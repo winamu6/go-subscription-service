@@ -11,7 +11,7 @@ type SubscriptionQueryService interface {
 	GetByID(ctx context.Context, id uint) (*model.SubscriptionResponse, error)
 	GetByUserID(ctx context.Context, userID string) ([]model.SubscriptionResponse, error)
 	GetAll(ctx context.Context) ([]model.SubscriptionResponse, error)
-	SumPriceByFilter(ctx context.Context, userID *string, serviceName *string, startDate, endDate time.Time) (float64, error)
+	SumPriceByFilter(ctx context.Context, userID *string, serviceName *string, startDate, endDate time.Time) (int, error)
 }
 
 type subscriptionQueryService struct {
@@ -27,7 +27,6 @@ func (s *subscriptionQueryService) GetByID(ctx context.Context, id uint) (*model
 	if err != nil {
 		return nil, err
 	}
-
 	return toSubscriptionResponse(sub), nil
 }
 
@@ -36,7 +35,6 @@ func (s *subscriptionQueryService) GetByUserID(ctx context.Context, userID strin
 	if err != nil {
 		return nil, err
 	}
-
 	return toSubscriptionResponseList(subs), nil
 }
 
@@ -45,20 +43,18 @@ func (s *subscriptionQueryService) GetAll(ctx context.Context) ([]model.Subscrip
 	if err != nil {
 		return nil, err
 	}
-
 	return toSubscriptionResponseList(subs), nil
 }
 
-func (s *subscriptionQueryService) SumPriceByFilter(ctx context.Context, userID *string, serviceName *string, startDate, endDate time.Time) (float64, error) {
-	return s.readRepo.SumPriceByFilter(ctx, userID, serviceName, startDate, endDate)
+func (s *subscriptionQueryService) SumPriceByFilter(ctx context.Context, userID *string, serviceName *string, startDate, endDate time.Time) (int, error) {
+	total, err := s.readRepo.SumPriceByFilter(ctx, userID, serviceName, startDate, endDate)
+	return int(total), err
 }
-
 
 func toSubscriptionResponse(sub *model.Subscription) *model.SubscriptionResponse {
 	if sub == nil {
 		return nil
 	}
-
 	return &model.SubscriptionResponse{
 		ID:          sub.ID,
 		ServiceName: sub.ServiceName,
@@ -72,9 +68,9 @@ func toSubscriptionResponse(sub *model.Subscription) *model.SubscriptionResponse
 }
 
 func toSubscriptionResponseList(subs []model.Subscription) []model.SubscriptionResponse {
-	res := make([]model.SubscriptionResponse, 0, len(subs))
-	for _, sub := range subs {
-		res = append(res, *toSubscriptionResponse(&sub))
+	res := make([]model.SubscriptionResponse, len(subs))
+	for i, sub := range subs {
+		res[i] = *toSubscriptionResponse(&sub)
 	}
 	return res
 }
