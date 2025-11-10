@@ -1,7 +1,7 @@
 services:
   app:
     build: .
-    container_name: subscription_app
+    container_name: subscription_service
     env_file:
       - .env
     ports:
@@ -12,7 +12,7 @@ services:
 
   db:
     image: postgres:16-alpine
-    container_name: subscription_db
+    container_name: subscription__service_db
     env_file:
       - .env
     ports:

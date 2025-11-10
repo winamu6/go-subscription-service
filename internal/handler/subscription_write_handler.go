@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/winnamu6/go-subscription-service/internal/logger"
 	"github.com/winnamu6/go-subscription-service/internal/model"
 	"github.com/winnamu6/go-subscription-service/internal/service"
 )
@@ -29,20 +30,26 @@ func NewSubscriptionWriteHandler(commandService service.SubscriptionCommandServi
 // @Failure      500  {object}  map[string]string
 // @Router       /subscriptions [post]
 func (h *SubscriptionWriteHandler) Create(c *gin.Context) {
+	log := logger.Get()
+	log.Infof("Handler: Create() called from %s", c.ClientIP())
+
 	ctx := c.Request.Context()
 	var req model.CreateSubscriptionRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Warnf("Invalid create request: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	sub, err := h.commandService.Create(ctx, &req)
 	if err != nil {
+		log.Errorf("Failed to create subscription: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	log.Infof("Subscription created successfully with ID %d", sub.ID)
 	c.JSON(http.StatusCreated, sub)
 }
 
@@ -60,27 +67,33 @@ func (h *SubscriptionWriteHandler) Create(c *gin.Context) {
 // @Failure      500  {object}  map[string]string
 // @Router       /subscriptions/{id} [put]
 func (h *SubscriptionWriteHandler) Update(c *gin.Context) {
-	ctx := c.Request.Context()
+	log := logger.Get()
 	idParam := c.Param("id")
+	log.Infof("Handler: Update() called for subscription ID=%s", idParam)
 
+	ctx := c.Request.Context()
 	id, err := strconv.ParseUint(idParam, 10, 64)
 	if err != nil {
+		log.Warnf("Invalid subscription ID: %s", idParam)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
 
 	var req model.UpdateSubscriptionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Warnf("Invalid update request for ID=%d: %v", id, err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	sub, err := h.commandService.Update(ctx, uint(id), &req)
 	if err != nil {
+		log.Errorf("Failed to update subscription ID=%d: %v", id, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	log.Infof("Subscription ID=%d updated successfully", sub.ID)
 	c.JSON(http.StatusOK, sub)
 }
 
@@ -95,19 +108,24 @@ func (h *SubscriptionWriteHandler) Update(c *gin.Context) {
 // @Failure      500  {object}  map[string]string
 // @Router       /subscriptions/{id} [delete]
 func (h *SubscriptionWriteHandler) Delete(c *gin.Context) {
-	ctx := c.Request.Context()
+	log := logger.Get()
 	idParam := c.Param("id")
+	log.Infof("Handler: Delete() called for subscription ID=%s", idParam)
 
+	ctx := c.Request.Context()
 	id, err := strconv.ParseUint(idParam, 10, 64)
 	if err != nil {
+		log.Warnf("Invalid subscription ID: %s", idParam)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
 
 	if err := h.commandService.Delete(ctx, uint(id)); err != nil {
+		log.Errorf("Failed to delete subscription ID=%d: %v", id, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	log.Infof("Subscription ID=%d deleted successfully", id)
 	c.Status(http.StatusNoContent)
 }

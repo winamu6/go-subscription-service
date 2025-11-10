@@ -1,61 +1,65 @@
 package main
 
 import (
-    "log"
+	"github.com/winnamu6/go-subscription-service/docs"
+	"github.com/winnamu6/go-subscription-service/internal/config"
+	"github.com/winnamu6/go-subscription-service/internal/db"
+	"github.com/winnamu6/go-subscription-service/internal/logger"
+	"github.com/winnamu6/go-subscription-service/internal/model"
+	"github.com/winnamu6/go-subscription-service/internal/repository/read_repository"
+	"github.com/winnamu6/go-subscription-service/internal/repository/write_repository"
+	"github.com/winnamu6/go-subscription-service/internal/router"
+	"github.com/winnamu6/go-subscription-service/internal/service"
 
-    "github.com/winnamu6/go-subscription-service/docs"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 
-    "github.com/winnamu6/go-subscription-service/internal/config"
-    "github.com/winnamu6/go-subscription-service/internal/db"
-    "github.com/winnamu6/go-subscription-service/internal/model"
-    "github.com/winnamu6/go-subscription-service/internal/repository/read_repository"
-    "github.com/winnamu6/go-subscription-service/internal/repository/write_repository"
-    "github.com/winnamu6/go-subscription-service/internal/router"
-    "github.com/winnamu6/go-subscription-service/internal/service"
-
-    swaggerFiles "github.com/swaggo/files"     
-    ginSwagger "github.com/swaggo/gin-swagger" 
-
-    "gorm.io/gorm"
-    "github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
-    cfg := config.Load()
+	logger.Init()
+	log := logger.Get()
+	log.Info("Logger initialized")
 
-    docs.SwaggerInfo.Title = "Subscription Service API"
-    docs.SwaggerInfo.Description = "API documentation for Subscription Service"
-    docs.SwaggerInfo.Version = "1.0"
-    docs.SwaggerInfo.Host = "localhost:" + cfg.AppPort
-    docs.SwaggerInfo.BasePath = "/"
+	cfg := config.Load()
+	log.Infof("Configuration loaded: %+v", cfg)
 
-    database := db.Connect(cfg)
-    runMigrations(database)
+	docs.SwaggerInfo.Title = "Subscription Service API"
+	docs.SwaggerInfo.Description = "API documentation for Subscription Service"
+	docs.SwaggerInfo.Version = "1.0"
+	docs.SwaggerInfo.Host = "localhost:" + cfg.AppPort
+	docs.SwaggerInfo.BasePath = "/"
 
-    readRepo := read_repository.NewSubscriptionReadRepo(database)
-    writeRepo := write_repository.NewSubscriptionWriteRepo(database)
+	database := db.Connect(cfg)
+	runMigrations(database)
 
-    readSvc := service.NewSubscriptionQueryService(readRepo)
-    writeSvc := service.NewSubscriptionCommandService(writeRepo, readSvc)
+	readRepo := read_repository.NewSubscriptionReadRepo(database)
+	writeRepo := write_repository.NewSubscriptionWriteRepo(database)
 
-    r := router.NewRouter(readSvc, writeSvc)
+	readSvc := service.NewSubscriptionQueryService(readRepo)
+	writeSvc := service.NewSubscriptionCommandService(writeRepo, readSvc)
 
-    r.GET("/", func(c *gin.Context) {
-        c.Redirect(302, "/swagger/index.html")
-    })
+	r := router.NewRouter(readSvc, writeSvc)
 
-    r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	r.GET("/", func(c *gin.Context) {
+		c.Redirect(302, "/swagger/index.html")
+	})
 
-    log.Printf("Starting server on port %s...", cfg.AppPort)
-    if err := r.Run(":" + cfg.AppPort); err != nil {
-        log.Fatalf("Server failed to start: %v", err)
-    }
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	log.Infof("Starting server on port %s...", cfg.AppPort)
+	if err := r.Run(":" + cfg.AppPort); err != nil {
+		log.Fatalf("Server failed to start: %v", err)
+	}
 }
 
 func runMigrations(db *gorm.DB) {
-	log.Println("Running migrations...")
+	log := logger.Get()
+	log.Info("Running migrations...")
 	if err := db.AutoMigrate(&model.Subscription{}); err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
-	log.Println("Migrations completed")
+	log.Info("Migrations completed successfully")
 }

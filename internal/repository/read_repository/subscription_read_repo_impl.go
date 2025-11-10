@@ -3,11 +3,11 @@ package read_repository
 import (
 	"context"
 	"errors"
-	"log"
 	"time"
-	"github.com/winnamu6/go-subscription-service/internal/model"
 
 	"github.com/google/uuid"
+	"github.com/winnamu6/go-subscription-service/internal/logger"
+	"github.com/winnamu6/go-subscription-service/internal/model"
 	"gorm.io/gorm"
 )
 
@@ -20,54 +20,57 @@ func NewSubscriptionReadRepo(db *gorm.DB) SubscriptionReadRepository {
 }
 
 func (r *subscriptionReadRepo) GetByID(ctx context.Context, id uint) (*model.Subscription, error) {
-	log.Printf("[SubscriptionRepo] GetByID called with id=%d", id)
+	log := logger.Get()
+	log.Infof("[SubscriptionReadRepo] GetByID called | id=%d", id)
 
 	var sub model.Subscription
 	err := r.db.WithContext(ctx).First(&sub, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Printf("[SubscriptionRepo] GetByID id=%d not found", id)
+			log.Warnf("[SubscriptionReadRepo] GetByID not found | id=%d", id)
 			return nil, nil
 		}
-		log.Printf("[SubscriptionRepo] GetByID id=%d error: %v", id, err)
+		log.Errorf("[SubscriptionReadRepo] GetByID error | id=%d err=%v", id, err)
 		return nil, err
 	}
 
-	log.Printf("[SubscriptionRepo] GetByID id=%d success", id)
+	log.Infof("[SubscriptionReadRepo] GetByID success | id=%d", id)
 	return &sub, nil
 }
 
 func (r *subscriptionReadRepo) GetByUserID(ctx context.Context, userID string) ([]model.Subscription, error) {
-	log.Printf("[SubscriptionRepo] GetByUserID called with userID=%s", userID)
+	log := logger.Get()
+	log.Infof("[SubscriptionReadRepo] GetByUserID called | userID=%s", userID)
 
 	uid, err := uuid.Parse(userID)
 	if err != nil {
-		log.Printf("[SubscriptionRepo] GetByUserID userID=%s invalid UUID: %v", userID, err)
+		log.Warnf("[SubscriptionReadRepo] GetByUserID invalid UUID | userID=%s err=%v", userID, err)
 		return nil, err
 	}
 
 	var subs []model.Subscription
 	err = r.db.WithContext(ctx).Where("user_id = ?", uid).Find(&subs).Error
 	if err != nil {
-		log.Printf("[SubscriptionRepo] GetByUserID userID=%s error: %v", userID, err)
+		log.Errorf("[SubscriptionReadRepo] GetByUserID error | userID=%s err=%v", userID, err)
 		return nil, err
 	}
 
-	log.Printf("[SubscriptionRepo] GetByUserID userID=%s success, found %d subscriptions", userID, len(subs))
+	log.Infof("[SubscriptionReadRepo] GetByUserID success | userID=%s count=%d", userID, len(subs))
 	return subs, nil
 }
 
 func (r *subscriptionReadRepo) GetAll(ctx context.Context) ([]model.Subscription, error) {
-	log.Println("[SubscriptionRepo] GetAll called")
+	log := logger.Get()
+	log.Info("[SubscriptionReadRepo] GetAll called")
 
 	var subs []model.Subscription
 	err := r.db.WithContext(ctx).Find(&subs).Error
 	if err != nil {
-		log.Printf("[SubscriptionRepo] GetAll error: %v", err)
+		log.Errorf("[SubscriptionReadRepo] GetAll error | err=%v", err)
 		return nil, err
 	}
 
-	log.Printf("[SubscriptionRepo] GetAll success, found %d subscriptions", len(subs))
+	log.Infof("[SubscriptionReadRepo] GetAll success | count=%d", len(subs))
 	return subs, nil
 }
 
@@ -77,14 +80,16 @@ func (r *subscriptionReadRepo) SumPriceByFilter(
 	serviceName *string,
 	startDate, endDate time.Time,
 ) (float64, error) {
-	log.Println("[SubscriptionRepo] SumPriceByFilter called")
+	log := logger.Get()
+	log.Infof("[SubscriptionReadRepo] SumPriceByFilter called | userID=%v serviceName=%v start=%s end=%s",
+		userID, serviceName, startDate.Format(time.RFC3339), endDate.Format(time.RFC3339))
 
 	query := r.db.WithContext(ctx).Model(&model.Subscription{}).Select("SUM(price) as total_price")
 
 	if userID != nil && *userID != "" {
 		uid, err := uuid.Parse(*userID)
 		if err != nil {
-			log.Printf("[SubscriptionRepo] SumPriceByFilter invalid userID=%s: %v", *userID, err)
+			log.Warnf("[SubscriptionReadRepo] SumPriceByFilter invalid userID=%s err=%v", *userID, err)
 			return 0, err
 		}
 		query = query.Where("user_id = ?", uid)
@@ -99,10 +104,10 @@ func (r *subscriptionReadRepo) SumPriceByFilter(
 	var total float64
 	err := query.Scan(&total).Error
 	if err != nil {
-		log.Printf("[SubscriptionRepo] SumPriceByFilter error: %v", err)
+		log.Errorf("[SubscriptionReadRepo] SumPriceByFilter error | err=%v", err)
 		return 0, err
 	}
 
-	log.Printf("[SubscriptionRepo] SumPriceByFilter success, total_price=%.2f", total)
+	log.Infof("[SubscriptionReadRepo] SumPriceByFilter success | total_price=%.2f", total)
 	return total, nil
 }

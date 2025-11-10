@@ -3,10 +3,14 @@ package router
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/winnamu6/go-subscription-service/internal/handler"
+	"github.com/winnamu6/go-subscription-service/internal/logger"
 	"github.com/winnamu6/go-subscription-service/internal/service"
 )
 
 func NewRouter(readSvc service.SubscriptionQueryService, writeSvc service.SubscriptionCommandService) *gin.Engine {
+	log := logger.Get()
+	log.Info("[Router] Initializing routes...")
+
 	r := gin.Default()
 
 	readHandler := handler.NewSubscriptionReadHandler(readSvc)
@@ -24,5 +28,6 @@ func NewRouter(readSvc service.SubscriptionQueryService, writeSvc service.Subscr
 		subscriptions.DELETE("/:id", writeHandler.Delete)
 	}
 
+	log.Info("[Router] Routes initialized successfully")
 	return r
 }

@@ -3,9 +3,11 @@ package service
 import (
 	"context"
 	"errors"
+	"time"
+
+	"github.com/winnamu6/go-subscription-service/internal/logger"
 	"github.com/winnamu6/go-subscription-service/internal/model"
 	"github.com/winnamu6/go-subscription-service/internal/repository/write_repository"
-	"time"
 )
 
 type SubscriptionCommandService interface {
@@ -27,7 +29,11 @@ func NewSubscriptionCommandService(writeRepo write_repository.SubscriptionWriteR
 }
 
 func (s *subscriptionCommandService) Create(ctx context.Context, req *model.CreateSubscriptionRequest) (*model.SubscriptionResponse, error) {
+	log := logger.Get()
+	log.Infof("[CommandService] Create called | userID=%s serviceName=%s", req.UserID, req.ServiceName)
+
 	if req.EndDate != nil && req.EndDate.Before(req.StartDate) {
+		log.Warnf("[CommandService] Create invalid dates | start=%s end=%s", req.StartDate, req.EndDate)
 		return nil, errors.New("end_date cannot be before start_date")
 	}
 
@@ -40,34 +46,36 @@ func (s *subscriptionCommandService) Create(ctx context.Context, req *model.Crea
 	}
 
 	if err := s.writeRepo.Create(ctx, sub); err != nil {
+		log.Errorf("[CommandService] Create error | userID=%s err=%v", req.UserID, err)
 		return nil, err
 	}
 
+	log.Infof("[CommandService] Create success | subscriptionID=%d", sub.ID)
 	return toSubscriptionResponse(sub), nil
 }
 
 func (s *subscriptionCommandService) Update(ctx context.Context, id uint, req *model.UpdateSubscriptionRequest) (*model.SubscriptionResponse, error) {
+	log := logger.Get()
+	log.Infof("[CommandService] Update called | id=%d", id)
+
 	existing, err := s.readSvc.GetByID(ctx, id)
 	if err != nil {
+		log.Errorf("[CommandService] Update read error | id=%d err=%v", id, err)
 		return nil, err
 	}
 	if existing == nil {
+		log.Warnf("[CommandService] Update failed | id=%d not found", id)
 		return nil, errors.New("subscription not found")
 	}
 
 	startDate := coalesceTime(req.StartDate, existing.StartDate)
 	endDate := coalesceTimePtr(req.EndDate, existing.EndDate)
-
 	if endDate != nil && endDate.Before(startDate) {
+		log.Warnf("[CommandService] Update invalid dates | id=%d start=%s end=%s", id, startDate, *endDate)
 		return nil, errors.New("end_date cannot be before start_date")
 	}
 
-	var price int
-	if req.Price != nil {
-		price = int(*req.Price) // из DTO
-	} else {
-		price = int(existing.Price) // из QueryService (float64 → int)
-	}
+	price := coalesceFloatToInt(req.Price, int(existing.Price))
 
 	sub := &model.Subscription{
 		ID:          id,
@@ -79,24 +87,36 @@ func (s *subscriptionCommandService) Update(ctx context.Context, id uint, req *m
 		CreatedAt:   existing.CreatedAt,
 	}
 
-
 	if err := s.writeRepo.Update(ctx, sub); err != nil {
+		log.Errorf("[CommandService] Update error | id=%d err=%v", id, err)
 		return nil, err
 	}
 
+	log.Infof("[CommandService] Update success | id=%d", id)
 	return toSubscriptionResponse(sub), nil
 }
 
 func (s *subscriptionCommandService) Delete(ctx context.Context, id uint) error {
+	log := logger.Get()
+	log.Infof("[CommandService] Delete called | id=%d", id)
+
 	existing, err := s.readSvc.GetByID(ctx, id)
 	if err != nil {
+		log.Errorf("[CommandService] Delete read error | id=%d err=%v", id, err)
 		return err
 	}
 	if existing == nil {
+		log.Warnf("[CommandService] Delete failed | id=%d not found", id)
 		return errors.New("subscription not found")
 	}
 
-	return s.writeRepo.Delete(ctx, id)
+	if err := s.writeRepo.Delete(ctx, id); err != nil {
+		log.Errorf("[CommandService] Delete error | id=%d err=%v", id, err)
+		return err
+	}
+
+	log.Infof("[CommandService] Delete success | id=%d", id)
+	return nil
 }
 
 func coalesceString(newVal, oldVal string) string {
@@ -112,6 +132,14 @@ func coalesceInt(newVal *int, oldVal int) int {
 	}
 	return oldVal
 }
+
+func coalesceFloatToInt(newVal *float64, oldVal int) int {
+	if newVal != nil {
+		return int(*newVal)
+	}
+	return oldVal
+}
+
 
 func coalesceTime(newVal *time.Time, oldVal time.Time) time.Time {
 	if newVal != nil {
