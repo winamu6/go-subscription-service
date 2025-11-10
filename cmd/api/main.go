@@ -17,6 +17,7 @@ import (
     ginSwagger "github.com/swaggo/gin-swagger" 
 
     "gorm.io/gorm"
+    "github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -38,6 +39,10 @@ func main() {
     writeSvc := service.NewSubscriptionCommandService(writeRepo, readSvc)
 
     r := router.NewRouter(readSvc, writeSvc)
+
+    r.GET("/", func(c *gin.Context) {
+        c.Redirect(302, "/swagger/index.html")
+    })
 
     r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
